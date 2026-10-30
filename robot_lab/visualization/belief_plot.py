@@ -1,136 +1,56 @@
 
-# ============================================================
-# IMPORTS - Gerekli modüller
-# ============================================================
+"""
+Visualize and export the robot's belief distribution history.
 
-import matplotlib.pyplot as plt
-from robot_lab.worlds.house import ROOMS
+This module plots the probability of each room across simulation
+steps and provides a utility for saving the resulting figure.
+"""
+
 from pathlib import Path
 
-# ============================================================
-# BELIEF HISTORY VISUALIZATION
-# Robotun inanç geçmişini görselleştirme
-# ============================================================
+import matplotlib.pyplot as plt
+
+from robot_lab.worlds.house import ROOMS
+
 
 def plot_belief_history(history):
     """
-    Robotun hareket geçmişindeki inanç dağılımlarını
-    çizgi grafiği kullanarak görselleştirir.
+    Plot the evolution of room probabilities during a simulation.
 
-    Bu fonksiyon:
-    1. Figure ve Axes nesnelerini oluşturur.
-    2. Hareket geçmişindeki zaman adımlarını toplar.
-    3. Her oda için olasılık değerlerini toplar.
-    4. Her odanın olasılık değişimini çizgiyle gösterir.
-    5. Grafik başlığını ve eksenlerini düzenler.
-    6. Oluşturulan Figure nesnesini döndürür.
+    Each room is represented by a separate line showing how its
+    belief probability changes across discrete time steps.
 
     Args:
-        history (list):
-            RobotSimulation.get_history() metodundan
-            elde edilen hareket kayıtları.
+        history (list[dict]):
+            Simulation records containing the step number
+            and belief distribution for each time step.
 
     Returns:
         matplotlib.figure.Figure:
-            Oluşturulan grafik nesnesi.
+            Figure containing the belief history visualization.
 
-    Grafik:
-        X ekseni -> Hareket adımı (Discrete Time)
-        Y ekseni -> Odada bulunma olasılığı
-
-    Önemli:
-        Bu fonksiyon grafiği ekranda açmaz.
-
-        Grafiğin gösterilmesi, kaydedilmesi veya
-        test edilmesi çağıran kodun sorumluluğudur.
+    Notes:
+        The figure is returned without being displayed or saved,
+        allowing the caller to manage visualization and export.
     """
 
-    # ========================================================
-    # 1. CREATE FIGURE AND AXES
-    # Grafik ve eksen nesnelerini oluşturma
-    # ========================================================
-
-    # plt.subplots() iki nesne döndürür:
-    #
-    # fig (Figure):
-    # Grafiğin tamamını temsil eder.
-    #
-    # ax (Axes):
-    # Çizgileri, başlıkları ve eksenleri
-    # yerleştirdiğimiz grafik alanıdır.
     fig, ax = plt.subplots()
 
-    # ========================================================
-    # 2. MOVEMENT STEPS
-    # Hareket adımlarını toplama
-    # ========================================================
-
-    # Grafiğin X eksenindeki zaman adımlarını
-    # saklamak için boş bir liste oluştururuz.
+    # Extract simulation steps for the horizontal axis.
     steps = []
 
-    # Hareket geçmişindeki bütün kayıtları dolaşırız.
     for record in history:
-
-        # Her kaydın zaman adımını listeye ekleriz.
-        #
-        # Örneğin:
-        # steps = [0, 1, 2]
-        #
-        # 0 -> Başlangıç
-        # 1 -> Birinci hareket
-        # 2 -> İkinci hareket
         steps.append(record["step"])
 
-    # ========================================================
-    # 3. BELIEF PROBABILITIES
-    # Her odanın olasılıklarını toplama
-    # ========================================================
-
-    # ROOMS içerisindeki bütün odaları dolaşırız.
-    #
-    # Her oda için ayrı bir çizgi oluşturulacaktır.
+    # Plot the belief probability of each room across all time steps.
     for room in ROOMS:
 
-        # İlgili odanın bütün zaman adımlarındaki
-        # olasılıklarını saklayacağımız liste.
         probabilities = []
 
-        # Hareket geçmişindeki bütün kayıtları dolaşırız.
         for record in history:
-
-            # İlgili odanın o adımdaki
-            # olasılık değerini alırız.
-            #
-            # Örneğin:
-            # record["belief"]["Office"]
             probability = record["belief"][room]
-
-            # Olasılığı listeye ekleriz.
             probabilities.append(probability)
 
-        # ====================================================
-        # 4. PLOT ROOM PROBABILITIES
-        # Her oda için olasılık çizgisi oluşturma
-        # ====================================================
-
-        # ax.plot() belirlenen Axes üzerine
-        # çizgi oluşturur.
-        #
-        # steps:
-        # X eksenindeki zaman adımları.
-        #
-        # probabilities:
-        # Y eksenindeki olasılık değerleri.
-        #
-        # marker="o":
-        # Her veri noktasında daire gösterir.
-        #
-        # label=room:
-        # Çizginin ait olduğu odanın adını saklar.
-        #
-        # Bu etiket testlerde çizgiyi
-        # bulmak için de kullanılacaktır.
         ax.plot(
             steps,
             probabilities,
@@ -138,134 +58,46 @@ def plot_belief_history(history):
             label=room
         )
 
-    # ========================================================
-    # 5. GRAPH CONFIGURATION
-    # Grafik görünümünü düzenleme
-    # ========================================================
-
-    # Grafik başlığını ayarla.
     ax.set_title("Robot Belief History")
-
-    # X ekseni hareket adımlarını temsil eder.
     ax.set_xlabel("Movement Step")
-
-    # Y ekseni olasılıkları temsil eder.
     ax.set_ylabel("Probability")
 
-    # Olasılıkların gösterildiği dikey ekseni
-    # 0 ile 1 arasında sınırlandır.
+    # Belief probabilities are bounded between 0 and 1.
     ax.set_ylim(0, 1)
-
-    # X ekseninde kayıtlı hareket adımlarını göster.
     ax.set_xticks(steps)
 
-    # Çizgilerin hangi odalara ait olduğunu göster.
     ax.legend()
-
-    # Yardımcı çizgileri etkinleştir.
     ax.grid(True)
 
-    # ========================================================
-    # 6. RETURN FIGURE
-    # Grafik nesnesini döndürme
-    # ========================================================
-
-    # Önceki sürüm:
-    # plt.show()
-    #
-    # Yeni sürüm:
-    # return fig
-    #
-    # Grafiği burada açmıyoruz.
-    # Oluşturulan Figure nesnesini döndürüyoruz.
-    #
-    # Böylece grafik:
-    # - Ekranda gösterilebilir.
-    # - PNG/PDF olarak kaydedilebilir.
-    # - Otomatik testlerle kontrol edilebilir.
     return fig
 
 
-
-# ============================================================
-# SAVE BELIEF PLOT
-# İnanç grafiğini PNG dosyasına kaydetme
-# ============================================================
-
 def save_belief_plot(fig, file_path):
     """
-    Oluşturulan inanç grafiğini PNG dosyasına kaydeder.
+    Save a belief history figure as a PNG image.
 
-    Bu fonksiyon:
-    1. Verilen dosya yolunu Path nesnesine dönüştürür.
-    2. Kaydetme klasörünün varlığını kontrol eder.
-    3. Gerekli klasörler yoksa oluşturur.
-    4. Matplotlib Figure nesnesini PNG olarak kaydeder.
-    5. Kaydedilen dosyanın yolunu döndürür.
+    Creates the destination directory when necessary
+    and saves the figure without opening a plot window.
 
     Args:
         fig (matplotlib.figure.Figure):
-            plot_belief_history() tarafından
-            oluşturulan grafik nesnesi.
-
+            Figure generated by plot_belief_history().
         file_path (str | Path):
-            Grafiğin kaydedileceği dosya yolu.
+            Destination path for the PNG image.
 
     Returns:
         Path:
-            Kaydedilen grafik dosyasının yolu.
-
-    Önemli:
-        Bu fonksiyon grafik penceresini açmaz.
-        Sadece grafiği dosyaya kaydeder.
+            Path to the saved image file.
     """
 
-    # ========================================================
-    # 1. CREATE FILE PATH
-    # Dosya yolunu oluşturma
-    # ========================================================
-
-    # Path(), verilen dosya yolunu Python'un
-    # pathlib.Path nesnesine dönüştürür.
-    #
-    # Örneğin:
-    # "robot_lab/experiments/results/belief_history.png"
     path = Path(file_path)
 
-    # ========================================================
-    # 2. CREATE OUTPUT DIRECTORY
-    # Kayıt klasörünü oluşturma
-    # ========================================================
-
-    # path.parent:
-    # Dosyanın kaydedileceği klasörü belirtir.
-    #
-    # parents=True:
-    # Gerekirse üst klasörleri de oluşturur.
-    #
-    # exist_ok=True:
-    # Klasör zaten varsa hata oluşturmaz.
+    # Ensure the output directory exists before saving.
     path.parent.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    # ========================================================
-    # 3. SAVE FIGURE AS PNG
-    # Grafiği PNG dosyasına kaydetme
-    # ========================================================
-
-    # fig.savefig():
-    # Matplotlib Figure nesnesini dosyaya kaydeder.
-    #
-    # dpi=150:
-    # Grafiğin çözünürlüğünü belirler.
-    #
-    # bbox_inches="tight":
-    # Grafik çevresindeki gereksiz boşlukları azaltır.
-    #
-    # format="png":
-    # Çıktının PNG formatında olmasını sağlar.
     fig.savefig(
         path,
         format="png",
@@ -273,12 +105,4 @@ def save_belief_plot(fig, file_path):
         bbox_inches="tight"
     )
 
-    # ========================================================
-    # 4. RETURN SAVED FILE PATH
-    # Kaydedilen dosyanın yolunu döndürme
-    # ========================================================
-
-    # Kaydetme başarılıysa dosyanın
-    # bulunduğu konumu döndürürüz.
     return path
-
