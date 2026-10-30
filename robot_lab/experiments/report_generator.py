@@ -1,342 +1,169 @@
-from pathlib import Path
-
-from robot_lab.worlds.house import ROOMS
-
-
-
-# ============================================================
-# IMPORTS - Gerekli modüller
-# ============================================================
+"""Generate a GitHub-friendly Markdown report from robot simulation history."""
 
 from pathlib import Path
 
 from robot_lab.worlds.house import ROOMS
 
-
-# ============================================================
-# GENERATE EXPERIMENT REPORT
-# Otomatik deney raporu oluşturma
-# ============================================================
 
 def generate_experiment_report(history, file_path):
-    """
-    Robotun hareket geçmişinden Markdown deney raporu oluşturur.
-
-    Bu fonksiyon:
-    1. Rapor dosyasının konumunu hazırlar.
-    2. Deney başlığını ve amacını oluşturur.
-    3. Başlangıç koşullarını rapora ekler.
-    4. Hareket komutlarını listeler.
-    5. Hareket sonuçlarını tabloya dönüştürür.
-    6. Son inanç dağılımını gösterir.
-    7. Deney sonuçlarını değerlendirir.
-    8. Raporu Markdown dosyasına kaydeder.
+    """Write a Markdown experiment report and return its Path.
 
     Args:
-        history (list):
-            RobotSimulation.get_history() metodundan
-            elde edilen hareket kayıtları.
+        history: Nonempty records from RobotSimulation.get_history().
+            Each record contains step, action, true_position, and belief.
+        file_path: Destination file path (str or pathlib.Path).
 
-        file_path (str | Path):
-            Markdown raporunun kaydedileceği dosya yolu.
-
-    Returns:
-        Path:
-            Oluşturulan Markdown raporunun dosya yolu.
-
-    Önemli:
-        history listesinin boş olmadığı varsayılır.
-
-        Rapordaki gerçek konumlar olasılıksal
-        hareket modeline göre değişebilir.
+    The report is generated from the provided history, not fixed example data.
     """
+    if not history:
+        raise ValueError("history must contain at least an initial state")
 
-    # ========================================================
-    # 1. CREATE REPORT FILE PATH
-    # Rapor dosyasının yolunu oluşturma
-    # ========================================================
-
-    # Path():
-    # Dosya yolunu Path nesnesine dönüştürür.
     path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Gerekli klasörler yoksa oluşturur.
-    #
-    # parents=True:
-    # Üst klasörleri de oluşturur.
-    #
-    # exist_ok=True:
-    # Klasör zaten varsa hata oluşturmaz.
-    path.parent.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    # ========================================================
-    # 2. INITIALIZE REPORT CONTENT
-    # Rapor metnini oluşturmaya başlama
-    # ========================================================
-
-    # lines:
-    # Markdown dosyasına yazılacak bütün
-    # metin satırlarını saklayan listedir.
-    lines = []
-
-    # Markdown ana başlığı.
-    #
-    # # işareti birinci seviye başlık oluşturur.
-    lines.append("# Robot Intelligence Lab - Deney 001")
-    lines.append("")
-
-    # ========================================================
-    # 3. EXPERIMENT OBJECTIVE
-    # Deney amacını açıklama
-    # ========================================================
-
-    # ## işareti ikinci seviye başlık oluşturur.
-    lines.append("## Deney Amacı")
-    lines.append("")
-
-    lines.append(
-        "Olasılıksal robot hareketlerini ve "
-        "Markov inanç dağılımlarını incelemek."
-    )
-
-    lines.append("")
-
-    # ========================================================
-    # 4. INITIAL CONDITIONS
-    # Başlangıç koşullarını rapora ekleme
-    # ========================================================
-
-    # history[0]:
-    # Simülasyonun başlangıç kaydını temsil eder.
-    #
-    # step = 0
-    # action = START
     first_record = history[0]
-
-    lines.append("## Başlangıç Koşulları")
-    lines.append("")
-
-    # Başlangıçtaki gerçek robot konumu.
-    lines.append(
-        "Başlangıç odası: "
-        + first_record["true_position"]
-    )
-
-    lines.append("")
-
-    # ========================================================
-    # 5. MOVEMENT COMMANDS
-    # Hareket komutlarını rapora ekleme
-    # ========================================================
-
-    lines.append("## Hareket Komutları")
-    lines.append("")
-
-    # history[1:]:
-    # Başlangıç kaydını atlayarak
-    # gerçekleştirilen hareketleri alır.
-    #
-    # Örneğin:
-    # ["RIGHT", "RIGHT", "UP"]
-    actions = []
-
-    for record in history[1:]:
-        actions.append(record["action"])
-
-    # Hareket komutlarını birleştirir.
-    #
-    # Örneğin:
-    # RIGHT -> RIGHT -> UP
-    if actions:
-        action_sequence = " → ".join(actions)
-    else:
-        action_sequence = "Hareket gerçekleştirilmedi."
-
-    lines.append(action_sequence)
-    lines.append("")
-
-    # ========================================================
-    # 6. EXPERIMENT RESULTS TABLE
-    # Deney sonuçlarını tablo olarak oluşturma
-    # ========================================================
-
-    lines.append("## Deney Sonuçları")
-    lines.append("")
-
-    # Markdown tablo başlıkları.
-    lines.append(
-        "| Adım | Komut | Gerçek Konum |"
-    )
-
-    # Markdown tablo ayırıcı satırı.
-    lines.append(
-        "|---|---|---|"
-    )
-
-    # Hareket geçmişindeki bütün kayıtları dolaş.
-    #
-    # Başlangıç kaydı da tabloya dahil edilir.
-    for record in history:
-
-        step = record["step"]
-        action = record["action"]
-        true_position = record["true_position"]
-
-        # f-string:
-        # Değişkenlerin değerlerini Markdown
-        # tablo satırına yerleştirir.
-        lines.append(
-            f"| {step} | {action} | {true_position} |"
-        )
-
-    lines.append("")
-
-    # ========================================================
-    # 7. FINAL BELIEF STATE
-    # Son inanç dağılımını rapora ekleme
-    # ========================================================
-
-    lines.append("## Son İnanç Dağılımı")
-    lines.append("")
-
-    # history[-1]:
-    # Listenin son elemanını döndürür.
-    #
-    # Bu kayıt simülasyonun son durumudur.
     last_record = history[-1]
-
-    # Son zaman adımındaki inanç dağılımı.
+    initial_belief = first_record["belief"]
     final_belief = last_record["belief"]
-
-    # ROOMS içerisindeki bütün odaları dolaş.
-    for room in ROOMS:
-
-        # İlgili odanın son olasılığını al.
-        probability = final_belief[room]
-
-        # :.4f:
-        # Sayıyı virgülden sonra dört
-        # basamakla gösterir.
-        #
-        # Örneğin:
-        # Hallway: 0.0640
-        lines.append(
-            f"- {room}: {probability:.4f}"
-        )
-
-    lines.append("")
-
-    # ========================================================
-    # 8. EXPERIMENT EVALUATION
-    # Deney sonuçlarını değerlendirme
-    # ========================================================
-
-    lines.append("## Değerlendirme")
-    lines.append("")
-
-    # Toplam hareket sayısı.
-    #
-    # Başlangıç kaydı hareket sayılmaz.
+    actions = [str(record["action"]) for record in history[1:]]
     total_steps = len(history) - 1
+    final_step = last_record["step"]
+    most_likely_room = max(ROOMS, key=final_belief.get)
+    most_likely_probability = final_belief[most_likely_room]
+    total_probability = sum(final_belief[room] for room in ROOMS)
 
-    lines.append(
-        f"Toplam {total_steps} hareket gerçekleştirildi."
-    )
+    def latex_room(room):
+        # Escape common LaTeX-sensitive characters in room names.
+        name = str(room).replace("\\", r"\textbackslash{}")
+        for old, new in (("_", r"\_"), ("&", r"\&"), ("%", r"\%"), ("#", r"\#")):
+            name = name.replace(old, new)
+        return rf"\text{{{name}}}"
 
-    lines.append("")
-
-    # Son gerçek robot konumu.
-    lines.append(
-        "Son gerçek konum: "
-        + last_record["true_position"]
-    )
-
-    lines.append("")
-
-    # En yüksek olasılığa sahip odayı belirle.
-    #
-    # max(..., key=final_belief.get):
-    # Olasılık değeri en yüksek olan
-    # oda ismini döndürür.
-    most_likely_room = max(
-        ROOMS,
-        key=final_belief.get
-    )
-
-    most_likely_probability = final_belief[
-        most_likely_room
+    lines = [
+        f"# Robot Intelligence Lab — {path.stem.replace('_', ' ').title()}",
+        "",
+        "**Experiment type:** Stochastic robot motion and Markov belief prediction  ",
+        "**Environment:** Five-room discrete state space",
+        "",
+        "## 1. Experiment Objective",
+        "",
+        "This experiment examines how uncertainty in robot motion propagates "
+        "through a sequence of discrete actions. The simulator samples a "
+        "ground-truth position while independently predicting a probability "
+        "distribution over possible locations.",
+        "",
+        "## 2. Initial Conditions",
+        "",
+        f"**Initial ground-truth position:** `{first_record['true_position']}`",
+        "",
+        "The initial belief distribution, in the room order shown below, is:",
+        "",
+        "$$",
+        r"\mathbf{b}_0 = \begin{bmatrix} "
+        + " & ".join(f"{initial_belief[room]:.4f}" for room in ROOMS)
+        + r" \end{bmatrix}",
+        "$$",
+        "",
+        "**State order:** " + " → ".join(f"`{room}`" for room in ROOMS),
+        "",
+        "### Markov Motion Prediction",
+        "",
+        "The belief is propagated using the transition probabilities "
+        "associated with each commanded action:",
+        "",
+        "$$",
+        r"b_{t+1}(x') = \sum_{x \in \mathcal{X}} P(x' \mid x,a_t)\,b_t(x)",
+        "$$",
+        "",
+        "For a row-vector belief and row-stochastic transition matrix:",
+        "",
+        "$$",
+        r"\mathbf{b}_{t+1} = \mathbf{b}_t\mathbf{T}_{a_t}",
+        "$$",
+        "",
+        "## 3. Action Sequence",
+        "",
+        " → ".join(f"`{action}`" for action in actions)
+        if actions else "No movement commands were executed.",
+        "",
+        f"**Number of actions:** ${total_steps}$",
+        "",
+        "## 4. Simulation Results",
+        "",
+        "The following positions are **sampled ground truth** for this run "
+        "and may change across runs:",
+        "",
+        "| Step | Action | Ground-Truth Position |",
+        "|---|---|---|",
     ]
 
-    lines.append(
-        "En yüksek olasılığa sahip oda: "
-        f"{most_likely_room} "
-        f"({most_likely_probability:.4f})"
-    )
+    for record in history:
+        # Preserve the original report table contract for existing consumers.
+        lines.append(
+            f"| {record['step']} | {record['action']} | "
+            f"{record['true_position']} |"
+        )
 
-    lines.append("")
+    lines.extend([
+        "",
+        "## 5. Final Belief Distribution",
+        "",
+        f"The predicted belief after step ${final_step}$ is:",
+        "",
+        "| State | Predicted Probability |",
+        "|---|---:|",
+    ])
 
-    # İnanç dağılımındaki bütün olasılıkların
-    # toplamını hesaplar.
-    total_probability = sum(
-        final_belief.values()
-    )
+    for room in ROOMS:
+        lines.append(f"| {room} | ${final_belief[room]:.4f}$ |")
 
-    lines.append(
-        "Son inanç dağılımının toplamı: "
-        f"{total_probability:.4f}"
-    )
+    terms = " + ".join(f"{final_belief[room]:.4f}" for room in ROOMS)
+    lines.extend([
+        "",
+        "### Probability Normalization",
+        "",
+        "$$",
+        rf"\sum_{{x \in \mathcal{{X}}}} b_{{{final_step}}}(x) "
+        rf"= {terms} = {total_probability:.4f}",
+        "$$",
+        "",
+        "### Most Probable State",
+        "",
+        "$$",
+        rf"x_{{\mathrm{{MAP}}}} = \arg\max_{{x \in \mathcal{{X}}}} "
+        rf"b_{{{final_step}}}(x) = {latex_room(most_likely_room)}",
+        "$$",
+        "",
+        "$$",
+        rf"P(X_{{{final_step}}} = {latex_room(most_likely_room)}) "
+        rf"= {most_likely_probability:.4f}",
+        "$$",
+        "",
+        "## 6. Experiment Evaluation",
+        "",
+        "| Metric | Result |",
+        "|---|---|",
+        f"| Number of actions | {total_steps} |",
+        f"| Initial ground-truth position | {first_record['true_position']} |",
+        f"| Final ground-truth position | {last_record['true_position']} |",
+        f"| Most probable predicted position | {most_likely_room} |",
+        f"| Maximum belief probability | ${most_likely_probability:.4f}$ |",
+        f"| Sum of belief probabilities | ${total_probability:.4f}$ |",
+        "",
+        "**Ground truth vs. belief:** The robot's actual position is "
+        "sampled from its motion model; the predicted belief is calculated "
+        "over all possible states without reading that sampled position.",
+        "",
+        "## 7. Conclusion",
+        "",
+        f"After **{total_steps}** commanded movement(s), the sampled robot "
+        f"position was **{last_record['true_position']}**. The highest "
+        f"predicted belief was assigned to **{most_likely_room}** "
+        f"(${most_likely_probability:.4f}$). "
+        "The belief distribution describes uncertainty rather than "
+        "directly revealing the robot's true location.",
+        "",
+    ])
 
-    lines.append("")
-
-    # Matematiksel değerlendirme.
-    lines.append(
-        "İnanç dağılımı, robotun hangi odada "
-        "bulunabileceğini olasılıksal olarak temsil eder."
-    )
-
-    lines.append("")
-
-    lines.append(
-        "Gerçek konum, hareket modelinden örneklenirken "
-        "inanç dağılımı bütün olası hareket sonuçları "
-        "dikkate alınarak hesaplanır."
-    )
-
-    lines.append("")
-
-    # ========================================================
-    # 9. GENERATE REPORT TEXT
-    # Rapor satırlarını tek metinde birleştirme
-    # ========================================================
-
-    # "\n".join(lines):
-    # Listedeki bütün metinleri satır sonu
-    # karakteriyle birleştirir.
-    #
-    # Böylece rapor tek bir string olur.
-    report_text = "\n".join(lines)
-
-    # ========================================================
-    # 10. SAVE MARKDOWN REPORT
-    # Markdown raporunu dosyaya kaydetme
-    # ========================================================
-
-    # write_text():
-    # Rapor metnini belirtilen dosyaya yazar.
-    #
-    # encoding="utf-8":
-    # Türkçe karakterlerin doğru kaydedilmesini sağlar.
-    path.write_text(
-        report_text,
-        encoding="utf-8"
-    )
-
-    # ========================================================
-    # 11. RETURN REPORT FILE PATH
-    # Kaydedilen rapor yolunu döndürme
-    # ========================================================
-
+    path.write_text("\n".join(lines), encoding="utf-8")
     return path
