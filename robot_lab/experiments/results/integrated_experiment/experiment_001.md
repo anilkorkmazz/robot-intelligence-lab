@@ -1,44 +1,96 @@
-# Robot Intelligence Lab - Deney 001
+# Robot Intelligence Lab — Experiment 001
 
-## Deney Amacı
+**Experiment type:** Stochastic robot motion and Markov belief prediction  
+**Environment:** Five-room discrete state space
 
-Olasılıksal robot hareketlerini ve Markov inanç dağılımlarını incelemek.
+## 1. Experiment Objective
 
-## Başlangıç Koşulları
+This experiment examines how uncertainty in robot motion propagates through a sequence of discrete actions. The simulator samples a ground-truth position while independently predicting a probability distribution over possible locations.
 
-Başlangıç odası: Office
+## 2. Initial Conditions
 
-## Hareket Komutları
+**Initial ground-truth position:** `Office`
 
-RIGHT → RIGHT → UP
+The initial belief distribution, in the room order shown below, is:
 
-## Deney Sonuçları
+$$
+\mathbf{b}_0 = \begin{bmatrix} 0.0000 & 0.0000 & 1.0000 & 0.0000 & 0.0000 \end{bmatrix}
+$$
 
-| Adım | Komut | Gerçek Konum |
+**State order:** `Living Room` → `Kitchen` → `Office` → `Hallway` → `Dining Room`
+
+### Markov Motion Prediction
+
+The belief is propagated using the transition probabilities associated with each commanded action:
+
+$$
+b_{t+1}(x') = \sum_{x \in \mathcal{X}} P(x' \mid x,a_t)\,b_t(x)
+$$
+
+For a row-vector belief and row-stochastic transition matrix:
+
+$$
+\mathbf{b}_{t+1} = \mathbf{b}_t\mathbf{T}_{a_t}
+$$
+
+## 3. Action Sequence
+
+`RIGHT` → `RIGHT` → `UP`
+
+**Number of actions:** $3$
+
+## 4. Simulation Results
+
+The following positions are **sampled ground truth** for this run and may change across runs:
+
+| Step | Action | Ground-Truth Position |
 |---|---|---|
 | 0 | START | Office |
 | 1 | RIGHT | Hallway |
 | 2 | RIGHT | Dining Room |
 | 3 | UP | Kitchen |
 
-## Son İnanç Dağılımı
+## 5. Final Belief Distribution
 
-- Living Room: 0.2560
-- Kitchen: 0.5120
-- Office: 0.0400
-- Hallway: 0.0640
-- Dining Room: 0.1280
+The predicted belief after step $3$ is:
 
-## Değerlendirme
+| State | Predicted Probability |
+|---|---:|
+| Living Room | $0.2560$ |
+| Kitchen | $0.5120$ |
+| Office | $0.0400$ |
+| Hallway | $0.0640$ |
+| Dining Room | $0.1280$ |
 
-Toplam 3 hareket gerçekleştirildi.
+### Probability Normalization
 
-Son gerçek konum: Kitchen
+$$
+\sum_{x \in \mathcal{X}} b_{3}(x) = 0.2560 + 0.5120 + 0.0400 + 0.0640 + 0.1280 = 1.0000
+$$
 
-En yüksek olasılığa sahip oda: Kitchen (0.5120)
+### Most Probable State
 
-Son inanç dağılımının toplamı: 1.0000
+$$
+x_{\mathrm{MAP}} = \arg\max_{x \in \mathcal{X}} b_{3}(x) = \text{Kitchen}
+$$
 
-İnanç dağılımı, robotun hangi odada bulunabileceğini olasılıksal olarak temsil eder.
+$$
+P(X_{3} = \text{Kitchen}) = 0.5120
+$$
 
-Gerçek konum, hareket modelinden örneklenirken inanç dağılımı bütün olası hareket sonuçları dikkate alınarak hesaplanır.
+## 6. Experiment Evaluation
+
+| Metric | Result |
+|---|---|
+| Number of actions | 3 |
+| Initial ground-truth position | Office |
+| Final ground-truth position | Kitchen |
+| Most probable predicted position | Kitchen |
+| Maximum belief probability | $0.5120$ |
+| Sum of belief probabilities | $1.0000$ |
+
+**Ground truth vs. belief:** The robot's actual position is sampled from its motion model; the predicted belief is calculated over all possible states without reading that sampled position.
+
+## 7. Conclusion
+
+After **3** commanded movement(s), the sampled robot position was **Kitchen**. The highest predicted belief was assigned to **Kitchen** ($0.5120$). The belief distribution describes uncertainty rather than directly revealing the robot's true location.
