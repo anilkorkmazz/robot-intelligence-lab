@@ -1,0 +1,32 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDE settings
+.idea/
+.vscode/
+
+# Testing and build files
+.pytest_cache/
+.mypy_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Generated experiment data
+data/experiments/*
+!data/experiments/.gitkeep
